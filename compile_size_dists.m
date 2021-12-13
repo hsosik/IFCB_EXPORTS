@@ -26,22 +26,27 @@ fi2 = strmatch('maxFeretDiameter', classFeaList_variables);
 numfiles = length(filelist);
 h = NaN(length(bins),numfiles);
 hbv = h;
+cc = [diatom_ind; dino_ind; nano_ind]; %added 10/23/21 to do groups
+cc = [particle_ind]; %added 10/23/21 to do groups
+
 for ii = 1:numfiles
     if ~rem(ii,20), disp([num2str(ii) ' of ' num2str(numfiles) ' ' filelist{ii}]), end
     if ~meta_data.skip(ii)
-        temp = cat(1,classFeaList{ii,:});
+        temp = cat(1,classFeaList{ii,cc});
+        if length(temp) >0
         bv = 4/3*pi*(temp(:,fi1)/2).^3;
         [h(:,ii),~,binnum] = histcounts(temp(:,fi1), [bins inf]);
         for tt = 1:length(bins)  %does this include the last one?
             hbv(tt,ii) = sum(bv(binnum==tt));
+        end
         end
     end
 end    
 
 
 %%
-ind = uw107ind;
-%ind = uw125ind;
+%ind = uw107ind;
+ind = uw125ind;
 yl = [1e-1 1e3];
 figure, set(gcf, 'position',[250 100 560*1.5 420*1.5])
 subplot(2,2,1)
@@ -146,3 +151,57 @@ set(gca, 'yscale', 'linear')
 ylim([100 2e4])
 xlim([4 100])
 xlabel('ESD (\mum)')
+
+
+
+
+
+%%
+
+figure
+yyaxis left
+plot(mdate(uw125ind), sum(h(gt5,uw125ind)./meta_data.ml_analyzed(uw125ind)'), '.-')
+datetick keeplimits
+grid
+yyaxis right
+plot(mdate(uw125ind), sum(h(gt5,uw125ind).*bins(gt5)')./sum(h(gt5,uw125ind)), '.-')
+
+%%
+dv = datevec(mdate(uw125ind));
+t = find(dv(:,3)==3);
+figure
+surf(mdate(uw125ind(t)), bins, h(:,uw125ind(t))./meta_data.ml_analyzed(uw125ind(t))')
+set(gca, 'yscale', 'log')
+datetick keeplimits
+
+%%
+binc = (bins(2:end)+bins(1:end-1))/2;
+bins2use = (binc>5 & binc<20);
+hdiff = h./diff([bins inf])';
+for tt = 676:length(filelist)
+    %f = fit(log10(binc(bins2use))', log10(hdiff(bins2use, uw125ind(tt))),'poly1');
+    X = log10(binc(bins2use))';
+    Y = log10(hdiff(bins2use, tt));
+    if isnan(Y)
+        keyboard
+    else
+        if ~isempty(isinf(Y))
+            ttt = find(isinf(Y));
+            disp(10.^X(ttt))
+            Y(ttt:end) = [];
+            X(ttt:end) = [];
+        end
+        if length(Y)>2
+            f = fit(X, Y,'poly1');
+            slope(tt) = f.p1;
+        end
+    end
+end
+
+s = find(mdate(uw125ind)>datenum('8-13-2018') & mdate(uw125ind)<datenum('9-9-2018'));
+for hr = 1:24
+    tt = find(ToDlocal(s)<hr & ToDlocal(s)>hr-1);
+    hrmed(hr) = median(slope(uw125ind(s(tt))));
+    hrmean(hr) = mean(slope(uw125ind(s(tt))));
+end
+end
