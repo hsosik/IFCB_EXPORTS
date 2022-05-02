@@ -29,15 +29,21 @@ classMap_provider2WoRMS.data_provider_rename_automated = {'Dinophyceae' 'Dinophy
 classMap_provider2OtherNamespace.data_provider_category_automated = {'detritus' 'detritus_clear' 'fecal_pellet' 'mix' 'flagellate'}';
 classMap_provider2OtherNamespace.data_provider_rename_automated = {'ptwg:detritus' 'whoi-plankton:detritus_clear' 'ptwg:fecal_pellet' 'whoi-plankton:nanoplankton_mix' 'whoi-plankton:flagellate' }';
 %% **We should change Radiozoa to Rhizaria**
+
 %%
 for ii = 1:size(assessed_ID_table,1)
     disp(ii)
-    assessed_ID_table.scientificNameID_automated(ii) = getAphiaID(obj, assessed_ID_table.data_provider_category_automated{ii}, 'marine_only');
-    if isnan(assessed_ID_table.scientificNameID_automated(ii)) 
+    %assessed_ID_table.scientificNameID_automated(ii) = getAphiaID(obj, assessed_ID_table.data_provider_category_automated{ii}, 'marine_only');
+    temp = webread(['https://www.marinespecies.org/rest/AphiaIDByName/' assessed_ID_table.data_provider_category_automated{ii} '?marine_only=true']);
+    if ~isempty(temp)
+        assessed_ID_table.scientificNameID_automated(ii) = temp;
+    else
+    %if isnan(assessed_ID_table.scientificNameID_automated(ii)) 
         % check for rename entry
         iii = find(strcmp(assessed_ID_table.data_provider_category_automated{ii},classMap_provider2WoRMS.data_provider_category_automated));
         if ~isempty(iii)
-            assessed_ID_table.scientificNameID_automated(ii) = getAphiaID(obj,classMap_provider2WoRMS.data_provider_rename_automated{iii}, 'marine_only');
+            %assessed_ID_table.scientificNameID_automated(ii) = getAphiaID(obj,classMap_provider2WoRMS.data_provider_rename_automated{iii}, 'marine_only');
+            assessed_ID_table.scientificNameID_automated(ii) = webread(['https://www.marinespecies.org/rest/AphiaIDByName/' classMap_provider2WoRMS.data_provider_rename_automated{iii} '?marine_only=true']);
         end
     end
     %%
