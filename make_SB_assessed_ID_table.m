@@ -48,8 +48,9 @@ for ii = 1:size(assessed_ID_table,1)
     end
     %%
     for ii = 1:size(assessed_ID_table,1)
-        if ~isnan(assessed_ID_table.scientificNameID_automated(ii)) % these are from WoRMS
+        if assessed_ID_table.scientificNameID_automated(ii) % these are from WoRMS
             %    assessed_ID_table.scientificName_automated{ii} = [WoRMSstr getAphiaNameByID(obj,assessed_ID_table.scientificNameID_automated(ii))];
+                assessed_ID_table.scientificName_automated{ii} = webread(['https://www.marinespecies.org/rest/AphiaNameByAphiaID/' num2str(assessed_ID_table.scientificNameID_automated(ii))]);
         else %get cases in ptwg or whoi-plankton
             iii = find(strcmp(assessed_ID_table.data_provider_category_automated{ii},classMap_provider2OtherNamespace.data_provider_category_automated));
             if ~isempty(iii)
