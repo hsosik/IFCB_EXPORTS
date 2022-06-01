@@ -10,16 +10,17 @@ metaT =  webread('https://ifcb-data.whoi.edu/api/export_metadata/EXPORTS', webop
 metaT.cast = fillmissing(metaT.cast, 'constant', "");
 clear myreadtable opts
 %%
-outpath = 'c:\work\temp\sb-test_process\';
+outpath = 'C:\work\EXPORTS\sb-test_process_with_class\';
 feabase = '\\sosiknas1\IFCB_products\EXPORTS\features\';
-classbase = '\\sosiknas1\IFCB_products\EXPORTS\class\v3\20220225_EXPORTS_pacific_Dec2021_1_1\';
+classbase = '\\sosiknas1\IFCB_products\EXPORTS\class\v3\20220225_EXPORTS_pacific_Dec2021_1_3_rev_labels\';
 urlbase = 'http://ifcb-data.whoi.edu/EXPORTS/';
+load("C:\work\EXPORTS\assessed_ID_table.mat") %created with make_SB_assessed_ID_table.m
 %%
 if exist('hdr', 'var')
     clear hdr*
 end
 ship = 'survey'; %'survey' 'process'
-sampletype = 'inline'; %'inline' 'discrete'
+sampletype = 'discrete'; %'inline' 'discrete'
 switch ship
 case 'survey'
     cruise = 'SR1812';
@@ -98,7 +99,7 @@ comment3 = '! v4 ifcb-analysis image products; https://github.com/hsosik/ifcb-an
 pixel_per_micron = str2num(hdr.pixel_per_um);
 hdr_copy = hdr;
 %%
-for count = 1:length(ii) %1:10 %20:5:65 (survey) %1:2:20 (process) 132:133 (process expts)  %1:length(ii)
+for count = 1:2%length(ii) %1:10 %20:5:65 (survey) %1:2:20 (process) 132:133 (process expts)  %1:length(ii)
     hdr = hdr_copy;
     m = metaT(ii(count),:);
     hdr.data_type = sbdatatypestr; %default
@@ -174,9 +175,9 @@ for count = 1:length(ii) %1:10 %20:5:65 (survey) %1:2:20 (process) 132:133 (proc
     clear hdrstr
     
     feafullname = [feabase hdr.eventID(1:5) filesep hdr.eventID(1:9) filesep hdr.eventID '_fea_v4.csv'];
-    classfullanem = [classbase hdr.eventID(1:5) filesep hdr.eventID(1:9) filesep hdr.eventID '.h5'];
+    classfullname = [classbase hdr.eventID(1:5) filesep hdr.eventID(1:9) filesep hdr.eventID '_class.h5'];
     f = readtable(feafullname);
-    c = load_class_scores(fullfile(f(1).folder, f(1).name));
+    c = load_class_scores(classfullname);
     [class_score,class_ind] = max(c.scores');
     class_label_data_provider = c.class_labels(class_ind);
     [~,label_ind] = ismember(class_label_data_provider, assessed_ID_table.data_provider_category_automated);
@@ -185,7 +186,7 @@ for count = 1:length(ii) %1:10 %20:5:65 (survey) %1:2:20 (process) 132:133 (proc
     outT.data_provider_category_automated = class_label_data_provider;
     outT.scientificName_automated = assessed_ID_table.scientificName_automated(label_ind);
     outT.scientificNameID_automated = assessed_ID_table.scientificNameID_automated(label_ind);
-    outT.prediction_score_automated_category = class_score;
+    outT.prediction_score_automated_category = class_score';
     outT.biovolume = round(f.Biovolume./(pixel_per_micron^3),3);
     outT.area = round(f.Area/(pixel_per_micron^2),3);
     outT.length = round(f.maxFeretDiameter/pixel_per_micron,3);
