@@ -5,7 +5,7 @@ f = dir([classbase '\**\*.h5']);
 classfullname = fullfile(f(1).folder, f(1).name);
 cl = h5read(classfullname,'/class_labels');
 
-switches = ['amoeba' 'Amoeba'; 'cryptophyta' 'Cryptophyta'; 'detritus_clear'	'detritus_transparent'];
+switches = ["amoeba" "Amoeba"; "cryptophyta" "Cryptophyta"; "detritus_clear" "detritus_transparent"];
 [~,~,ia] = intersect(switches(:,1),cl);
 cl(ia) = switches(:,2);
 
