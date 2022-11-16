@@ -10,7 +10,8 @@ metaT =  webread('https://ifcb-data.whoi.edu/api/export_metadata/EXPORTS', webop
 metaT.cast = fillmissing(metaT.cast, 'constant', "");
 clear myreadtable opts
 %%
-outpath = 'C:\work\EXPORTS\sb-test_process_with_class\';
+%outpath = 'C:\work\EXPORTS\sb-test_process_with_class\';
+outpath = '\\sosiknas1\IFCB_products\EXPORTS\SeaBASS\20220225_EXPORTS_pacific_Dec2021_1_3_rev_labels\sb_files\';
 feabase = '\\sosiknas1\IFCB_products\EXPORTS\features\';
 classbase = '\\sosiknas1\IFCB_products\EXPORTS\class\v3\20220225_EXPORTS_pacific_Dec2021_1_3_rev_labels\';
 urlbase = 'http://ifcb-data.whoi.edu/EXPORTS/';
@@ -52,10 +53,13 @@ switch sampletype
         IFCBtypestr = {'cast' 'underway_discrete'};
 end
 hdr.experiment = 'EXPORTS';
-hdr.cruise = 'EXPORTSNP';
+hdr.cruise = 'EXPORTSNP';31
 hdr.station = '-9999';
+hdr.r2r_event = '-9999';
 hdr.data_file_name = 'temp'; 
-hdr.documents = 'IFCB_brief_protocol_Sosik_Oct2021.docx,checklist_IFCB_plankton_and_particles_EXPORTS-EXPORTSNP_Sosik.docx,namespace_ptwg_nonconforming_roi_v1.yml,namespace_whoi-plankton_extra_nonconforming_v1.yml';
+%hdr.documents = 'IFCB_brief_protocol_Sosik_Oct2021.docx,checklist_IFCB_plankton_and_particles_EXPORTS-EXPORTSNP_Sosik.docx,namespace_ptwg_nonconforming_roi_v1.yml,namespace_whoi-plankton_extra_nonconforming_v1.yml';
+%hdr.documents = 'IFCB_brief_protocol_Sosik_Oct2021.docx,checklist_IFCB_plankton_and_particles_EXPORTS-EXPORTSNP_SR1812_R2_Sosik_automated_classification.docx,namespace_ptwg_nonconforming_roi_v1.yml';
+hdr.documents = 'IFCB_brief_protocol_Sosik_Oct2021.docx,checklist_IFCB_plankton_and_particles_EXPORTS-EXPORTSNP_SR1812_R2_Sosik_automated_classification.docx,namespace_ptwg_nonconforming_roi_v1.yml,automated_assessed_id_EXPORTSNP_IFCB125.txt';
 hdr.calibration_files = 'no_cal_files';
 hdr.eventID = 'temp';  
 hdr.data_type = sbdatatypestr;
@@ -64,7 +68,7 @@ hdr.data_type = sbdatatypestr;
 %end
 hdr.instrument_model = 'temp'; 
 hdr.instrument_manufacturer = 'McLane_Research_Laboratories_Inc';
-hdr.data_status = 'update';
+hdr.data_status = 'final';
 hdr.start_date = 'temp';
 hdr.end_date = 'temp';  
 hdr.start_time = 'temp';
@@ -79,8 +83,8 @@ hdr.volume_sampled_ml = '5';
 hdr.volume_imaged_ml = 'temp';  
 hdr.pixel_per_um = '2.77'; 
 hdr.associatedMedia_source = 'temp'; 
-hdr.associated_files = [hdr.experiment '-' hdr.cruise '_' cruise '_IFCB_raw_data.tgz' ',automated_assessed_id_EXPORTSNP_IFCB125.txt'];
-hdr.associated_file_types = 'raw,metadata';
+hdr.associated_archives = [hdr.experiment '-' hdr.cruise '_' cruise '_IFCB_raw_data.tgz'];
+hdr.associated_archive_types = 'raw';
 hdr.length_representation_instrument_varname = 'maxFeretDiameter'; 
 hdr.width_representation_instrument_varname = 'minFeretDiameter';
 hdr.missing = '-9999';
@@ -95,11 +99,12 @@ comment1 = ['! EXPORTSNP cruise ' cruise];
 %comment2 = '! To construct each image filename from associatedMedia: extract the string after the last / and replace .html with .png';
 comment2 = '! To access each image directly from the associatedMedia string: replace .html with .png';
 comment3 = '! v4 ifcb-analysis image products; https://github.com/hsosik/ifcb-analysis'; 
+comment6 = '! Files updated (R2 version) to include taxonomic classification';
 
 pixel_per_micron = str2num(hdr.pixel_per_um);
 hdr_copy = hdr;
 %%
-for count = 1:2%length(ii) %1:10 %20:5:65 (survey) %1:2:20 (process) 132:133 (process expts)  %1:length(ii)
+for count = 1:length(ii) %1020:1021%length(ii) %1:10 %20:5:65 (survey) %1:2:20 (process) 132:133 (process expts)  %1:length(ii)
     hdr = hdr_copy;
     m = metaT(ii(count),:);
     hdr.data_type = sbdatatypestr; %default
@@ -136,8 +141,16 @@ for count = 1:2%length(ii) %1:10 %20:5:65 (survey) %1:2:20 (process) 132:133 (pr
 %        else %cast for ship = survey
             if strmatch(m.sample_type, 'cast')
                 ind = find(strcmp(r2r.Instrument, 'CTD911') &  (str2num(char(m.cast)) == r2r.Cast) & ~strcmp(r2r.Action, 'other'));
-                eventlist = strcat(r2r.Event(ind), ','); eventlist = strcat(eventlist{:}); eventlist = eventlist(1:end-2);
-                hdr.station = eventlist;
+                eventlist = strcat(r2r.R2R_Event(ind), ','); eventlist = strcat(eventlist{:}); eventlist = eventlist(1:end-1);
+                hdr.r2r_event = eventlist;
+                temp = regexprep(r2r.Station(ind), ' ', '');
+                hdr.station = temp{end};
+                if ~isequal(temp{:})%isequal(temp(ind(1)),temp(ind(2)))
+                    disp('mismatched station info')
+                    disp(temp)
+                    disp(hdr.station)
+                    keyboard
+                end
             end
  %       end
     end
@@ -146,7 +159,7 @@ for count = 1:2%length(ii) %1:10 %20:5:65 (survey) %1:2:20 (process) 132:133 (pr
     end
     hdr.eventID = char(m.pid);
     disp(hdr.eventID)
-    hdr.data_file_name = [hdr.experiment '-' hdr.cruise '_' cruise '_' sampletype '_IFCB_plankton_and_particles_' hdr.eventID([2:9 11:16]) '_R1.sb'];
+    hdr.data_file_name = [hdr.experiment '-' hdr.cruise '_' cruise '_' sampletype '_IFCB_plankton_and_particles_' hdr.eventID([2:9 11:16]) '_R2.sb'];
     hdr.instrument_model = ['Imaging_FlowCytobot_IFCB' num2str(m.ifcb)];
     hdr.start_date = datestr(datenum(m.sample_time, 'yyyy-mm-dd HH:MM:ss+00:00'), 'yyyymmdd');
     hdr.end_date = hdr.start_date;
@@ -169,7 +182,7 @@ for count = 1:2%length(ii) %1:10 %20:5:65 (survey) %1:2:20 (process) 132:133 (pr
         comment4 = ['!'];
     end
     
-    hdrstr = ['/begin_header'; hdrstr(1:end-2)'; '!'; comment1; '!'; comment5; '!'; comment4; '!'; comment2; '!'; comment3; '!'; hdrstr(end-1:end)'; '/end_header'];
+    hdrstr = ['/begin_header'; hdrstr(1:end-2)'; '!'; comment1; '!'; comment5; '!'; comment4; '!'; comment2; '!'; comment3; '!'; comment6; '!'; hdrstr(end-1:end)'; '/end_header'];
     outfullfile = [outpath hdr.data_file_name];
     writecell(hdrstr, outfullfile, 'FileType', 'text', 'QuoteStrings', false);
     clear hdrstr
